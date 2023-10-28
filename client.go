@@ -205,7 +205,10 @@ func (c *client) mainloop(ctx context.Context, params *lookupParams) {
 			sections := append(msg.Answer, msg.Ns...)
 			sections = append(sections, msg.Extra...)
 
-			for _, answer := range sections {
+			for i, answer := range sections {
+				_ = i
+				// fmt.Printf(">>> iface:%s: <-- [%d]:%s\n", c.ifaces[0].Name, i, answer.String())
+
 				switch rr := answer.(type) {
 				case *dns.PTR:
 					if params.ServiceName() != rr.Hdr.Name {
@@ -262,6 +265,14 @@ func (c *client) mainloop(ctx context.Context, params *lookupParams) {
 						}
 					}
 				case *dns.AAAA:
+					// Hack: for iOS17
+					if len(entries) == 1 {
+						for k := range entries {
+							entries[k].AddrIPv6 = append(entries[k].AddrIPv6, rr.AAAA)
+						}
+						break
+					}
+
 					for k, e := range entries {
 						if e.HostName == rr.Hdr.Name {
 							entries[k].AddrIPv6 = append(entries[k].AddrIPv6, rr.AAAA)
